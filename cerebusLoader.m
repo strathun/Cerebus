@@ -1,4 +1,5 @@
 %% Pulls most relevant data from Cerebus files.
+% Use this to pull commonly used data chunks from .ns5 and .nev files
 % run in the directory that contains the .nev and .ns5 file
 
 fileNameNS5 = 'datafile001.ns5';    %
