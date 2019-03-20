@@ -9,19 +9,19 @@ fileNameNS5 = [fileNameGEN '.ns5'];    %
 fileNameNEV = [fileNameGEN '.nev'];    %
 
 %%%%%%%%%_Paramaters_%%%%%%%%%%%%%
-Fs = 30e3;              % Sampling Frequency, 30e3 for both Cerebus and Ripple
-threshold = -4.0 ;      % vrms multiplier for spike detection
-fullData = 1;           % analyze full dataset? yes 1, no 0.
-startTime = 20;         % if fullData = 0, specificy analysis start and stop time
-stopTime = 24;
-channels = 16;          % Number of signal recording channels
-rejectMod = 2;          % reject waveforms > (rejectMod x mean waveform) at any location
-filterType = 1;         % 1 = low pass -> high pass filter
-passBandF = 250;        % Frequency in Hz of high passband
+Fs =         30e3;      % Sampling Frequency, 30e3 for both Cerebus and Ripple
+threshold =  -4.0;      % vrms multiplier for spike detection
+fullData =      1;      % analyze full dataset? yes 1, no 0.
+startTime =    20;      % if fullData = 0, specificy analysis start and stop time
+stopTime =     24;
+channels =     16;      % Number of signal recording channels
+rejectMod =     2;      % reject waveforms > (rejectMod x mean waveform) at any location
+filterType =    1;      % 1 = low pass -> high pass filter
+passBandF =   250;      % Frequency in Hz of high passband
 passBandFL = 7500;
-order = 3;              % Order for filter
-chSelect = 13;           % Channel to analyze
-ARP = .001;             % Absolute refractory period. Any detected spikes with isi < ARP will be rejected
+order =         3;      % Order for filter
+chSelect =      5;      % Channel to analyze
+ARP =        .001;      % Absolute refractory period. Any detected spikes with isi < ARP will be rejected
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% raw data
@@ -36,7 +36,7 @@ V = double( rawdata );
 % units as uV
 V = ( V  )/4;
 
-Vfiltered = comAvgRef( V(1:16,:) ); %17th channel is foot switch, Cerebus
+Vfiltered = comAvgRef( V(1:channels,:) ); %17th channel is foot switch, Cerebus
 % Vfiltered = V(1:16,:);
 % Vfiltered = V;
 
@@ -96,7 +96,8 @@ for i = 1:1
     
     Vrms(i) = rms(choppedData);
     
-    figure
+    % Plots filtered data
+    figure(2)
     plot(timefilt,Vfiltered(i,:))
     hold on
     
@@ -143,7 +144,7 @@ for i = 1:1
     meanWave = mean(waveform) ;
     plot(timeWave*1e3, meanWave, 'LineWidth', 3)
     xlabel('Time (ms)');
-%     ylim([-80 60])
+    ylabel('Voltage (uV)');
 end
 
 % Raster Plot
@@ -162,20 +163,19 @@ xlabel('Time (s)');
 xpoints = (xpoints.')/Fs;
 ypoints = ypoints.';
 threshCount = threshCount * 3;
+scaleAdjust = round( range( Vfiltered ), -1 ) * ( .25 );    % Makes plot pretty
 
 xpointsSorted = xpoints(threshCount(1) + 1: (threshCount(1)+ threshCount(2)));
 ypointsSorted = ypoints(threshCount(1) + 1: (threshCount(1)+ threshCount(2)));
 figure(2)
-ylim([-150 150])
-plot(xpointsSorted,((ypointsSorted)*50)-(150),'k')
-% xlim([0 4])
+plot( xpointsSorted,( ( ypointsSorted ) * scaleAdjust )-( 4 * scaleAdjust ), 'k' )
 
 %% Plot Cerebus detected waveforms
 x = (1:1:length(waveformdata(1).waveforms(:,1))) / Fs ;
 figure
-[~, commercialCount] = size(waveformdata(1).waveforms);
+[~, commercialCount] = size(waveformdata(chSelect).waveforms);
 for i = 1:commercialCount
-plot( x, waveformdata(1).waveforms(:,i),'Color',[.5 .5 .5], 'LineWidth', 1.2)
+plot( x, waveformdata(chSelect).waveforms(:,i),'Color',[.5 .5 .5], 'LineWidth', 1.2)
 hold on
 end
 
@@ -183,9 +183,12 @@ threshLine = ones(1,length(x)) * -28;
 threshLine = threshLine(1:(length(x)));
 plot(x,threshLine,'--')
 
-meanWave = mean(waveformdata(1).waveforms,2);
+meanWave = mean(waveformdata(chSelect).waveforms,2);
 plot(x, meanWave, 'LineWidth', 3)
+
 title('Detected Waveforms (Commercial System)')
+xlabel('Time')
+ylabel('Voltage (uV)')
 ylim([-80 60])
 %% Plot of raw data for gut check
 
@@ -194,8 +197,10 @@ title('Raw Channels')
 for i = 1:1
     figure
     plot(time(1,:),V(i,:))
-    xlabel('Time (s)');
 end
+
+xlabel('Time (s)');
+ylabel('Voltage (uV)');
 
 %% Plots PSD
 avgs = 64;
