@@ -379,11 +379,11 @@ else % Equivalent to elseif iscell(spikes).
         xStartOffset = relSpikeStartTime - 0.0005*timeRange;
         xEndOffset = relSpikeStartTime + 0.0005*timeRange + spikeDuration;
         newLim = [ minTime+xStartOffset, maxTime+xEndOffset ];
-        xLimForCell(limitsToSet) = newLim(limitsToSet);
+%         xLimForCell(limitsToSet) = newLim(limitsToSet);
         % End result, if both limits are automatically set, is that the x
         % axis is expanded 0.1%, so you can see initial and final spikes.
     end
-    xlim(xLimForCell);
+%     xlim(xLimForCell);
     ylim([0 nTrials+1]);
     
     if strcmpi(plotType,'vertline') || strcmpi(plotType,'horzline')
