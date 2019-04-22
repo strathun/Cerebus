@@ -2,7 +2,7 @@
 % Use this to pull commonly used data chunks from .ns5 and .nev files
 % Run in the directory that contains the .nev and .ns5 file
 
-fileNameGEN = 'TDT15_Iso_1_stim10s_noVitals_2';       % filename (no extension) of datafiles you want to examine
+fileNameGEN = '20190422_10kResistorCh1toRefGnd_HS2_wScrewGnd';       % filename (no extension) of datafiles you want to examine
 
 % Appends for other file types
 fileNameNS5 = [fileNameGEN '.ns5'];    %
@@ -15,12 +15,13 @@ fullData =      1;      % analyze full dataset? yes 1, no 0.
 startTime =    20;      % if fullData = 0, specificy analysis start and stop time
 stopTime =     24;
 channels =     16;      % Number of signal recording channels
-rejectMod =     2;      % reject waveforms > (rejectMod x mean waveform) at any location
+rejectMod =   1.3;      % reject waveforms > (rejectMod x mean waveform) at any location
 filterType =    1;      % 1 = low pass -> high pass filter
 passBandF =   250;      % Frequency in Hz of high passband
 passBandFL = 7500;
-order =         3;      % Order for filter
-chSelect =      5;      % Channel to analyze
+order =         2;      % Order for filter
+chSelect =     01;      % Channel to analyze
+rippleHS =      2;      % Specifies the Ripple FE used to take measurements for deembedding
 ARP =        .001;      % Absolute refractory period. Any detected spikes with isi < ARP will be rejected
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -36,11 +37,12 @@ V = double( rawdata );
 % units as uV
 V = ( V  )/4;
 
-Vfiltered = comAvgRef( V(1:channels,:) ); %17th channel is foot switch, Cerebus
+%Vfiltered = comAvgRef( V(1:channels,:) ); %17th channel is foot switch, Cerebus
 % Vfiltered = V(1:16,:);
-% Vfiltered = V;
+ Vfiltered = V;
 
 %% Waveform
+% Waveforms detected from commercial system (Cerebus/Ripple)
 
 location = pwd;
 [status, waveformdata ] = WFPlot(fileNameGEN,location,[],-4);
@@ -196,7 +198,7 @@ figure(300)
 title('Raw Channels')
 for i = 1:1
     figure
-    plot(time(1,:),V(i,:))
+    plot(time(1,:),V(chSelect,:))
 end
 
 xlabel('Time (s)');
@@ -206,20 +208,46 @@ ylabel('Voltage (uV)');
 avgs = 64;
 
 figure
-for i = 1:channels
-    [pxx1,f] = psdWalker(Vfiltered,avgs,Fs);
+for i = 1:channels      % for now just does one channel per run
+    if rippleHS == 1    % We use two different ripple FE.
+        addpath(genpath('../instrumentNoise'));
+        load('instrumentNoisePower_HS1')
+        [pxx1,f] = psdWalker(Vfiltered./1e6,avgs,Fs,groundPower(:,chSelect));
+    elseif rippleHS == 2
+        addpath(genpath('../instrumentNoise'));
+        load('instrumentNoisePower_HS2')
+        [pxx1,f] = psdWalker(Vfiltered./1e6,avgs,Fs,groundPower(:,chSelect));
+    else
+        [pxx1,f] = psdWalker(Vfiltered./1e6,avgs,Fs);
+    end
     loglog(f,(pxx1))
     hold on
 end
+% Calc TIN for filtered BW
+cumTIN(1,:) = max(cumtrapz(f,((1e-9)*pxx1).^2)); % TIN uV %FIX THIS
+cumTIN(1,:) = sqrt(cumTIN(1,:));
 ylabel('Noise Voltage ( nV / \surd Hz )','Interpreter','tex')
 xlabel('Frequency (Hz)')
 
 figure
-for i = 1:channels
-    [pxx1,f] = psdWalker(V(chSelect,(20*Fs):(24*Fs)),avgs,Fs);
+for i = 1:1     % for now just does one channel per run
+    if rippleHS == 1
+        addpath(genpath('../instrumentNoise'));
+        load('instrumentNoisePower_HS1')
+        [pxx1,f] = psdWalker(V(chSelect,:)./1e6,avgs,Fs,groundPower(:,chSelect));
+    elseif rippleHS == 2
+        addpath(genpath('../instrumentNoise'));
+        load('instrumentNoisePower_HS2')
+        [pxx1,f] = psdWalker(V(chSelect,:)./1e6,avgs,Fs,groundPower(:,chSelect));
+    else
+        [pxx1,f] = psdWalker(V(chSelect,:)./1e6,avgs,Fs);
+    end 
     loglog(f,(pxx1))
     hold on
 end
+% Calc TIN for entire BW
+cumTIN(2,:) = max(cumtrapz(f,((1e-9)*pxx1).^2)); % TIN uV %FIX THIS
+cumTIN(2,:) = sqrt(cumTIN(2,:));
 ylabel('Noise Voltage ( nV / \surd Hz )','Interpreter','tex')
 xlabel('Frequency (Hz)')
 

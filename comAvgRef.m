@@ -9,8 +9,10 @@ function [ dataFiltered ] = comAvgRef( data )
 %       channel.
 
 [ rowNum, columnNum ] = size(data);
-cAvg = mean( data );
 
+cOffset = mean( data, 2);
+data = data - cOffset;
+cAvg = mean( data );
 dataFiltered = NaN( rowNum, columnNum );
 
 for i = 1:rowNum
